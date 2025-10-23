@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KralPing - Profesyonel Bot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--bg:#0f0f1a;--card:#1a1a2e;--accent:#5865F2;--text:#e0e0ff;--text-light:#b0b0d0;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px;}
+    .hero{height:100vh;background:linear-gradient(rgba(15,15,26,.9),rgba(15,15,26,.9)),url('https://images.unsplash.com/photo-1614064641938-3bbee52942c7') center/cover;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;}
+    .hero::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at center,rgba(88,101,242,.2),transparent 70%);animation:pulse 4s infinite;}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+    .hero h1{font-size:4.5rem;font-weight:800;background:linear-gradient(90deg,#5865F2,#8b9eff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .btn{display:inline-block;background:var(--accent);color:#fff;padding:14px 36px;border-radius:12px;font-weight:600;text-decoration:none;margin:5px;transition:.3s;}
+    .btn:hover{transform:translateY(-3px);}
+    .btn-outline{background:transparent;border:2px solid var(--accent);}
+    .btn-outline:hover{background:var(--accent);}
+    section{padding:100px 0;}
+    h2{text-align:center;font-size:2.5rem;margin-bottom:60px;background:linear-gradient(90deg,#5865F2,#8b9eff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .features,.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;}
+    .card{background:var(--card);padding:30px;border-radius:16px;transition:.4s;border:1px solid rgba(88,101,242,.2);}
+    .card:hover{transform:translateY(-12px);border-color:var(--accent);}
+    .stat-value{font-size:2.2rem;color:var(--accent);}
+    .lang-switch{position:absolute;top:20px;right:20px;}
+    .lang-btn{background:none;border:1px solid var(--accent);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;margin-left:10px;}
+    .hidden{display:none;}
+    .log-item{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.9rem;color:var(--text-light);}
+    .server-item{background:var(--card);padding:15px;margin:10px 0;border-radius:8px;cursor:pointer;}
+    footer{text-align:center;padding:60px 20px;color:#666;font-size:.9rem;border-top:1px solid rgba(255,255,255,.1);}
+  </style>
+</head>
+<body>
+
+  <div class="lang-switch">
+    <button class="lang-btn" onclick="setLang('tr')">TR</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+
+  <section class="hero">
+    <div class="container">
+      <h1 id="title">KralPing</h1>
+      <p id="subtitle">Profesyonel moderasyon ve dashboard.</p>
+      <a href="#" class="btn" onclick="login()">Discord Girişi</a>
+      <a href="#dashboard" class="btn btn-outline">Dashboard</a>
+    </div>
+  </section>
+
+  <div id="loginStatus" class="container hidden">
+    <h3 id="welcomeUser">Hoş geldin, {user}!</h3>
+    <ul class="server-list" id="serverList"></ul>
+  </div>
+
+  <section class="dashboard hidden" id="dashboard">
+    <div class="container">
+      <h2 id="dashTitle">Dashboard</h2>
+      <div class="dash-grid">
+        <div class="card"><h3 id="serversLabel">Sunucular</h3><div class="stat-value" id="serverCount">0</div></div>
+        <div class="card"><h3 id="usersLabel">Kullanıcılar</h3><div class="stat-value" id="userCount">0</div></div>
+        <div class="card"><h3 id="commandsLabel">Komut Kullanımı</h3><div class="stat-value" id="commandCount">0</div></div>
+        <div class="card"><h3 id="logsLabel">Son Loglar</h3><div id="logs"></div></div>
+        <div class="card"><h3 id="chartLabel">Son 7 Gün</h3><canvas id="chart"></canvas></div>
+        <div class="card">
+          <h3 id="testLabel">Komut Testi</h3>
+          <button class="btn" onclick="testCommand('ping')">p!ping</button>
+          <button class="btn" onclick="testCommand('ban @user')">p!ban</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>© 2025 KralPing • <a href="#">Destek</a></footer>
+
+  <script>
+    const CLIENT_ID = 'BURAYA_CLIENT_ID';
+    const BOT_ID = 'BURAYA_BOT_ID';
+    const BACKEND_URL = 'https://BURAYA_BACKEND.onrender.com';
+    const REDIRECT_URI = `${BACKEND_URL}/callback`;
+    const DEFAULT_GUILD = 'BURAYA_GUILD_ID';
+
+    const translations = {
+      tr:{title:'KralPing',subtitle:'Profesyonel moderasyon ve dashboard.',dashTitle:'Dashboard',serversLabel:'Sunucular',usersLabel:'Kullanıcılar',commandsLabel:'Komut Kullanımı',logsLabel:'Son Loglar',chartLabel:'Son 7 Gün',testLabel:'Komut Testi',welcomeUser:'Hoş geldin, {user}!'},
+      en:{title:'KralPing',subtitle:'Professional moderation and dashboard.',dashTitle:'Dashboard',serversLabel:'Servers',usersLabel:'Users',commandsLabel:'Command Usage',logsLabel:'Recent Logs',chartLabel:'Last 7 Days',testLabel:'Command Test',welcomeUser:'Welcome, {user}!'}
+    };
+    let lang='tr', userToken=null, selectedGuild=DEFAULT_GUILD, chart=null;
+
+    function setLang(l){
+      lang=l;
+      document.querySelectorAll('[id]').forEach(el=>{
+        const key=el.id;
+        if(translations[lang][key]) el.textContent=translations[lang][key];
+      });
+    }
+
+    function login(){
+      const url=`https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds`;
+      location.href=url;
+    }
+
+    async function handleCallback(){
+      const params=new URLSearchParams(location.search);
+      const code=params.get('code');
+      if(!code) return;
+      const res=await fetch(`${BACKEND_URL}/callback?code=${code}`);
+      const data=await res.json();
+      if(data.error) return alert('Giriş hatası');
+      userToken=data.token;
+      document.getElementById('loginStatus').classList.remove('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      if(data.user && data.user.username){
+        document.getElementById('welcomeUser').innerHTML=translations[lang].welcomeUser.replace('{user}',data.user.username);
+      }
+      loadServers(data.guilds || []);
+      loadData();
+    }
+
+    function loadServers(guilds){
+      const list=document.getElementById('serverList');
+      list.innerHTML='';
+      guilds.forEach(g=>{
+        const li=document.createElement('li');
+        li.className='server-item';
+        li.textContent=g.name || 'Bilinmeyen Sunucu';
+        li.onclick=()=>selectServer(g.id);
+        list.appendChild(li);
+      });
+    }
+    function selectServer(id){ selectedGuild=id; alert(`Seçilen sunucu: ${id}`); }
+
+    async function loadData(){
+      try{
+        const res=await fetch(`${BACKEND_URL}/api/stats`,{
+          headers:{'Authorization':`Bearer ${userToken?.access_token || ''}`}
+        });
+        if(!res.ok) throw new Error('API hatası');
+        const s=await res.json();
+        document.getElementById('serverCount').textContent=s.servers || 0;
+        document.getElementById('userCount').textContent=s.users || 0;
+        document.getElementById('commandCount').textContent=s.commands || 0;
+        document.getElementById('logs').innerHTML=(s.logs || []).map(l=>`<div class="log-item">${l}</div>`).join('');
+        if(chart) chart.destroy();
+        const ctx=document.getElementById('chart').getContext('2d');
+        chart=new Chart(ctx,{type:'line',data:{labels:s.dates || [],datasets:[{label:'Komutlar',data:s.usage || [],borderColor:'#5865F2',fill:true}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+      }catch(e){console.error(e);}
+    }
+
+    async function testCommand(cmd){
+      if(!selectedGuild) return alert('Önce bir sunucu seçin');
+      const payload={command:cmd,guild_id:selectedGuild};
+      try{
+        const res=await fetch(`${BACKEND_URL}/api/test-command`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${userToken?.access_token || ''}`},
+          body:JSON.stringify(payload)
+        });
+        const r=await res.json();
+        alert(r.message || r.error || 'Bilinmeyen yanıt');
+      }catch(e){alert('Komut hatası: '+e);}
+    }
+
+    if(location.search.includes('code=')) handleCallback();
+    setInterval(loadData,10000);
+    setLang('tr');
+  </script>
+</body>
+</html>
